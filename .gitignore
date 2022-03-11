@@ -1,0 +1,5 @@
+sync_data.sh
+log/
+*.config
+header*.txt
+nohup.out

@@ -1,0 +1,260 @@
+#!/usr/bin/env bash
+VERSION="ubx2rnx - v0.1b1"
+
+# //////////////////////////////////////////////////////////////////////////////
+#HELP FUNCTION
+function help {
+  echo " Program Name : ubx2rnx.sh"
+  echo " Version : ${VERSION}"
+  echo " Purpose : convert ubx to rnx files"
+  echo " Usage   : ubx2rnx.sh <config_file> [options] "
+  echo " Switches: "
+  echo ""
+  exit 1
+}
+
+#BASH SETTINGS
+set -e
+set -o pipefail
+
+
+# //////////////////////////////////////////////////////////////////////////////
+# CHECK if necessary programs exist
+# convbin, RNX2CRX/Z, gfzrnx
+
+#Check for convbin
+if ! [ -x "$(command -v convbin)" ]
+then
+    echo '[ERROR]: convbin is not installed'
+    exit 1
+fi
+
+#Check RNX2CRX
+if ! [ -x "$(command -v RNX2CRX)" ]
+then
+    echo '[ERROR]: RNX2CRX/Z is not installed'
+    exit 1
+fi
+
+#Check RNX2CRZ
+if ! [ -x "$(command -v RNX2CRZ)" ]
+then
+    echo '[ERROR]: RNX2CRZ is not installed'
+    exit 1
+fi
+
+#Check compress
+if ! [ -x "$(command -v compress)" ]
+then
+    echo '[ERROR]: RNX2CRX/Z is not installed'
+    exit 1
+fi
+
+#Check gzip
+if ! [ -x "$(command -v gzip)" ]
+then
+    echo '[ERROR]: RNX2CRX/Z is not installed'
+    exit 1
+fi
+
+# Pre-defined variables
+RATE=30
+
+# //////////////////////////////////////////////////////////////////////////////
+#GET CML ARGUMENTS
+if [ "$#" == 0 ]
+then
+  echo "[ERROR]: No input file"
+  help
+fi
+
+while [ $# -gt 0  ]
+do
+    case "$1" in
+        --config)
+            conf_file=${2}
+            # Check configuration file
+            if [ ! -f ${conf_file} ]
+            then
+                echo "[ERROR]: config file ${conf_file} does not exis"
+                exit 1
+            else
+                echo "...load configuration file ..."
+                source ${conf_file}
+            fi
+            shift 2
+            ;;
+        --rate)
+            RATE=${2}
+            shift 2
+            ;;
+        -h | --help)
+            help
+            ;;
+        -v | --version)
+            echo "version: ${VERSION}"
+            exit 1
+            shift
+            ;;
+#        *)
+#            echo "[ERROR] Bad argument structure. argument \"${1}\" is not right"
+#            echo "[STATUS] Script Finished Unsuccesfully! Exit Status 1"
+#            exit 1
+    esac
+done
+
+
+
+
+
+
+dateubx=$(date +%Y%m%d)
+
+#UBXdirectory
+
+#UBX_DIR=/media/DataInt/ProjectsNOA/21_lowcostGNSS/rnx_data/NOATL_Jul
+
+#RNX_DIR=/media/DataInt/ProjectsNOA/21_lowcostGNSS/rnx_data/NOATL_Jul
+#rnx_ver="3.04"
+tr=(a b c d e f g h i j k l m n o p q r s t u v w x)
+
+#cp ${UBX_DIR}/${ubx_file} ${RNX_DIR}/.
+
+cd ${RNX_DIR}
+
+
+# //////////////////////////////////////////////////////////////////////////////
+## RATE 30-s create one RINEX file > Hatanaka > Compressed
+if [ ${RATE} -eq 30 ]
+then
+    for i in `ls *.ubx`
+    do
+        rnx_date=${i:0:10}
+        rnx_hour=${i:11:2}
+
+        year=$(date -d ${rnx_date} +%Y)
+        yy=$(date -d ${rnx_date} +%y)
+        doy=$(date -d ${rnx_date} +%j)
+        hour=${tr[${rnx_hour#0}]}
+
+        fout_name=${SITE_NAME}${doy}${hour}
+
+        obshfile=${fout_name}.obs
+        rnxhfile=${fout_name}.${yy}o
+
+        # convert grom ubx > rinex fromat
+        # rinex version ${RNX_VER} from config file
+        convbin ${i} -v ${RNX_VER} -o ${obshfile}
+
+        # use gfzrnx to check obs file from config contain errors
+        gfzrnx -finp ${obshfile} -fout ${rnxhfile} -f -kv
+        wait
+    done
+    if [ ${RNX_VER} == "2.11" ]
+    then
+        # produce names for RINEX 2 format
+        # xxxxdddh.yyo.Z
+        rnxfile=${SITE_NAME}${doy}0.${yy}o
+        crzfile=${SITE_NAME}${doy}0.${yy}d.Z
+
+        # gfzrnx options
+        # -epo_beg start from 00:00:00 not the day before
+        # -d create rinex for hole day
+        # -smp resample observations to 30-s rate
+        # -crux header inforamtion file
+        gfzrnx -finp ${SITE_NAME}${doy}{a..x}.${yy}o -fout ${rnxfile} \
+            -kv -epo_beg ${year}${doy}_000000 -d 86370 -smp 30 \
+            -crux ${HEADER_INFO} -f
+
+        # convert to Hatanaka (d) and compressed (.Z) format
+        RNX2CRZ -f ${rnxfile}
+
+        # remove temporary files
+        rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
+
+    elif [ ${RNX_VER} == "3.04" ]
+    then
+        #produce names for RINEX 3 format
+        # XXXXMRCCC_K_YYYYDDDHHMM_01D_30S_tt.FFF.gz
+        # check configuration file for details
+        fname=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}0000_01D_30S_${tt}
+        rnxfile=${fname}.rnx
+        crxfile=${fname}.crx
+        crzfile=${fname}.crx.gz
+
+        gfzrnx -finp ${SITE_NAME}${doy}{a..x}.${yy}o -fout ${rnxfile} \
+            -kv -epo_beg ${year}${doy}_000000 -d 86370 -smp 30 \
+            -crux ${HEADER_INFO} -f
+
+        # Convert to Hatanaka format
+        RNX2CRX -f ${rnxfile}
+
+        # Compress with gzip
+        gzip -f -c ${crxfile} > ${crzfile}
+
+        # remove temporary files
+        rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
+        rm -rf ${rnxfile} ${crxfile}
+    else
+        echo "use rinex 2.11 or 3.04 > config file"
+        exit 1
+    fi
+    # TO DO: push files to final ftp potision
+    # 30-s YYYY/DDD/YYt/
+
+
+elif [ ${RATE} -eq  1 ]
+then
+    for i in `ls *.ubx`
+    do
+        rnx_date=${i:0:10}
+        rnx_hour=${i:11:2}
+        rnx_min=${i:14:2}
+
+        year=$(date -d ${rnx_date} +%Y)
+        yy=$(date -d ${rnx_date} +%y)
+        doy=$(date -d ${rnx_date} +%j)
+        hour=${tr[${rnx_hour#0}]}
+
+        fout_name=${SITE_NAME}${doy}${hour}
+
+        obshfile=${fout_name}.obs
+        rnxhfile=${fout_name}.${yy}o
+
+        # convert grom ubx > rinex fromat
+        # rinex version ${RNX_VER} from config file
+        convbin ${i} -v ${RNX_VER} -o ${obshfile}
+
+        # use gfzrnx to check obs file from config contain errors
+        gfzrnx -finp ${obshfile} -fout ${rnxhfile} -f -kv
+        wait
+    done
+
+    # TO DO: push files to final ftp potision
+    # high rate folder : YYYY/DDD/YYt/HH/
+
+else
+    echo "choose RATE 30-s or 1Hz"
+    exit 1
+fi
+
+
+
+
+
+exit 0
+#usage:this_script <filename>
+#HOST='83.212.76.4'
+#USER="tychoftp"
+#PASSWD="sklo;ypo1985"
+#REMOTEPATH='/home/tychoftp/ftp/datalog'
+REMOTEPATH=${REMOTEPATH}/${year}
+
+ftp -n $HOST <<END_FTP
+quote USER $USER
+quote PASS $PASSWD
+cd $REMOTEPATH
+mkdir $doy
+put $crzfile
+quit
+END_FTP
