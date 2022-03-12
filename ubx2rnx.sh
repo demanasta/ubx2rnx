@@ -206,28 +206,28 @@ then
         #check if all hourly files exists
         for i in {0..23}
         do
-            if test -f ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_01S_${tt}.crx.gz
+            if test -f ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz
           then
-              echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_01S_${tt}.crx.gz exist" >> ${LOG} 2>&1
+              echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz exist" >> ${LOG} 2>&1
           else
-              echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_01S_${tt}.crx.gz does not exist" >> ${LOG} 2>&1
+              echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz does not exist" >> ${LOG} 2>&1
           #    exit 1
           fi
         done
 
-        for i in `ls ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}*00_01H_01S_${tt}.crx.gz`
+        for i in `ls ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}*00_01H_${HRATE}_${tt}.crx.gz`
         do
             gzip -d -f ${i}
             CRX2RNX -f ${i:0:38}>> ${LOG} 2>&1
         done
         # XXXXMRCCC_K_YYYYDDDHHMM_01D_30S_tt.FFF.gz
         # check configuration file for details
-        fname=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}0000_01D_30S_${tt}
+        fname=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}0000_01D_${DRATE}_${tt}
         rnxfile=${fname}.rnx
         crxfile=${fname}.crx
         crzfile=${fname}.crx.gz
 
-        gfzrnx -finp ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}??00_01H_01S_${tt}.rnx -fout ${rnxfile} \
+        gfzrnx -finp ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}??00_01H_${HRATE}_${tt}.rnx -fout ${rnxfile} \
             -kv -epo_beg ${year}${doy}_000000 -d 86340 -smp 30 \
             -crux ${HEADER_INFO} -f >> ${LOG} 2>&1
 
@@ -327,7 +327,7 @@ then
             #produce names for RINEX 3 format
             # XXXXMRCCC_K_YYYYDDDHHMM_01D_30S_tt.FFF.gz
             # check configuration file for details
-            fname=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}${rnx_hour}00_01H_01S_${tt}
+            fname=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}${rnx_hour}00_01H_${HRATE}_${tt}
             rnxhfile=${fname}.rnx
             crxhfile=${fname}.crx
             crzhfile=${fname}.crx.gz
@@ -396,4 +396,4 @@ fi
 
 echo "$(date +%Y.%m.%d_%H:%M:%S) [STATUS]: ubx2rnx status exit" $? >>${LOG} 2>&1
 exit 0
-@
+

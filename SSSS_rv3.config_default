@@ -1,0 +1,31 @@
+#!/bin/bash
+
+UBX_DIR=${HOME}/data/raw_ubx # UBX folder
+RNX_DAILY=${HOME}/data/daily # folder for daily rinex data
+RNX_HIGH=${HOME}/data/highrate # folder for hourly rinex data
+HEADER_INFO=${HOME}/Apps/ubx2rnx/header_station.txt # file place header information for rinex
+
+## RINEX 2.11 info
+#RNX_VER="2.11"
+#SITE_NAME="" # 4-character station name
+
+
+## RINEX 3.04 info
+RNX_VER="3.04" #Rinex version format
+SITE_NAME="SSSS" #4-character station name
+M=0 #monument or marker number (0-9)
+R=0 #receiver number (0-9)
+CCC="GRE" #ISO country code
+K="R" #Data source: R:receiver S:stream U:unknown
+
+tt="MO" #type of data: MO = Mixed Observation data
+
+HRATE="01S" # raw data sample rate for hourly conversion
+DRATE="30S" # rate for daily rinex data format
+
+## FTP configuration - old ersion. only for debugging
+#HOST=''
+#USER=""
+#PASSWD=""
+#REMOTEPATH=''
+

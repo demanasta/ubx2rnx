@@ -1,0 +1,22 @@
+update_insert:
+
+OM - SSSS :
+
+"APPROX POSITION XYZ" : { 0:" ", 1:" ", 2:" " }
+"MARKER NAME" : { 0:" " }
+"MARKER NUMBER" : { 0:" " }
+"OBSERVER / AGENCY" : { 0:" ", 1:" " }
+
+"REC # / TYPE / VERS" + 2021001:00000 0000000:00000 : { 0:"", 1:"U-BLOX ZED_F9P"}
+
+"ANT # / TYPE" + 2021001:00000 0000000:00000 : { 0:"", 1:"AS-ANT2BCAL", 2:"NONE" }
+
+"ANTENNA: DELTA H/E/N"+ 2021001:00000 0000000:00000 : { 0:"0", 1:"0", 2:"0" }
+
+replace:
+    ALL:
+        regexp_from : "^.*log:.*$"
+        regexp_to   : ""
+
+        regexp_from : "^.*format: u-blox UBX.*$"
+        regexp_to   : ""
