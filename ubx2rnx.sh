@@ -14,6 +14,16 @@ function help {
   echo "        --highrate: create hourly highrate(1Hz) rinex"
   echo "   -v | --version : check versrion"
   echo "   -h | --help : help screen"
+  echo "-----------------------------------------------------------------------"
+  echo " Authors:"
+  echo "         - Dimitris Anastasiou, dganastasiou@gmail.com"
+  echo "         - Yannis Karamitros, jkaram@noa.gr"
+  echo " Licence: MIT"
+  echo " Funded: National Observatory of Athens, PROION Project"
+  echo "-----------------------------------------------------------------------"
+  echo " History:"
+  echo "   2021.09.21 : Initial beta verion"
+  echo "   2022.03.10 : Many updates, add to github repository"
   exit 1
 }
 
@@ -21,6 +31,7 @@ function help {
 set -e
 set -o pipefail
 
+GLOG=log/geninfo.log
 
 # //////////////////////////////////////////////////////////////////////////////
 # CHECK if necessary programs exist
@@ -29,42 +40,48 @@ set -o pipefail
 #Check for convbin
 if ! [ -x "$(command -v convbin)" ]
 then
-    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: convbin is not installed" >> ${LOG} 2>&1
+    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: convbin is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
 #Check RNX2CRX
 if ! [ -x "$(command -v RNX2CRX)" ]
 then
-    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: RNX2CRX/Z is not installed" >> ${LOG} 2>&1
+    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: RNX2CRX/Z is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
 #Check RNX2CRZ
 if ! [ -x "$(command -v RNX2CRZ)" ]
 then
-    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: RNX2CRZ is not installed" >> ${LOG} 2>&1
+    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: RNX2CRZ is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
 #Check compress
 if ! [ -x "$(command -v compress)" ]
 then
-    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: compress is not installed" >> ${LOG} 2>&1
+    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: compress is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
 #Check gzip
 if ! [ -x "$(command -v gzip)" ]
 then
-    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: gzip is not installed" >> ${LOG} 2>&1
+    echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: gzip is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
+# //////////////////////////////////////////////////////////////////////////////
 # Pre-defined variables
 DAILY=0
 HIGHRATE=1
+
+#  Alternative options for convbin conversion programm
 ALTOBS="-od -os -oi -ot"
+
+#  Receiver options for convbin conversion from ubx to rnx
+#+ Convbin use version demo5 for receiver options
 RECOPT="-TADJ=1.0"
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -83,10 +100,10 @@ do
             # Check configuration file
             if [ ! -f ${conf_file} ]
             then
-                echo "[ERROR]: config file ${conf_file} does not exis"
+                echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: config file ${conf_file} does not exis" >> ${GLOG} 2>&1
                 exit 1
             else
-                echo "...load configuration file ..."
+                echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: load configuration file ..." >> ${GLOG} 2>&1
                 source ${conf_file}
             fi
             shift 2
@@ -134,21 +151,13 @@ done
 
 
 
-
-
-
+# set current date for ubx data
 dateubx=$(date +%Y%m%d)
 
-#UBXdirectory
 
-#UBX_DIR=/media/DataInt/ProjectsNOA/21_lowcostGNSS/rnx_data/NOATL_Jul
-
-#RNX_DIR=/media/DataInt/ProjectsNOA/21_lowcostGNSS/rnx_data/NOATL_Jul
-#rnx_ver="3.04"
 tr=(a b c d e f g h i j k l m n o p q r s t u v w x)
 
-#cp ${UBX_DIR}/${ubx_file} ${RNX_DIR}/.
-
+# change to ubx directory
 cd ${UBX_DIR}
 
 
@@ -189,7 +198,7 @@ then
         # -d create rinex for hole day,
         # -smp resample observations to 30-s rate
         # -crux header inforamtion file
-        gfzrnx -finp ${SITE_NAME}${doy}{a..x}.${yy}o -fout ${rnxfile} \
+        gfzrnx -finp ${SITE_NAME}${doy}?.${yy}o -fout ${rnxfile} \
             -kv -epo_beg ${year}${doy}_000000 -d 86340 -smp 30 \
             -crux ${HEADER_INFO} -f >>${LOG} 2>&1
 
