@@ -165,7 +165,7 @@ cd ${UBX_DIR}
 ## RATE 30-s create one RINEX file for previous day > Hatanaka > Compressed
 if [ ${DAILY} -eq 1 ]
 then
-    LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_d_$(date +%Y_%m_%d).log
+    LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
     year=$(date --date="-1 day" -u +%Y)
     yy=$(date --date="-1 day" -u +%y)
     doy=$(date --date="-1 day" -u +%j)
@@ -280,9 +280,9 @@ then
 
 elif [ ${HIGHRATE} -eq  1 ]
 then
-    LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_h_$(date +%Y_%m_%d).log
+    LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_h_${SITE_NAME}_$(date +%Y_%m_%d).log
     echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG] : data to hourly RINEX ......." >> ${LOG} 2>&1
-    ubx_file=$(date --date="-1 hour" -u +%Y-%m-%d_%H)-00-00_GNSS-1.ubx
+    ubx_file=$(date --date="-1 hour" -u +%Y-%m-%d_%H)-00-00_${SITE_NAME}.ubx
 
     #check if file exist
     if test -f ${UBX_DIR}/${ubx_file}
