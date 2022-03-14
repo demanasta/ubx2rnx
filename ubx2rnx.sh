@@ -294,7 +294,7 @@ then
     echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG] : data to hourly RINEX ......." >> ${LOG} 2>&1
     #ubx_file=$(date --date="-1 hour" -u +%Y-%m-%d_%H)-00-00_${SITE_NAME}.ubx
 
-    hod_fname=$(date --date="-7 hour" -u +%Y-%m-%d_%H-)
+    hod_fname=$(date --date="-1 hour" -u +%Y-%m-%d_%H-)
 #    count_ubx=0
     for ubx_file in `ls ${hod_fname}*_${SITE_NAME}.ubx`
     do
@@ -323,7 +323,7 @@ then
                 echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: use rinex 2.11 or 3.04 > config file" ${LOG} 2>&1
                 exit 1
             fi
-            
+
             # set obs name for each hour-minute
 #            obshfile=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}${rnx_hour}${rnx_min}_01H_${HRATE}_${tt}.obs
 #            echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: convert ${ubx_file} ...to... ${obshfile}">>${LOG} 2>&1
