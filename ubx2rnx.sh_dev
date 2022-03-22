@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VERSION="ubx2rnx - v0.1b2333"
+VERSION="ubx2rnx - v0.1b23"
 
 # //////////////////////////////////////////////////////////////////////////////
 #HELP FUNCTION
@@ -10,14 +10,15 @@ function help {
   echo " Usage   : ubx2rnx.sh  --config <config_file> [options] "
   echo " Switches: "
   echo "        --config <file>: input confoguration file"
-  echo "        --daily : create daily file 30s"
-  echo "        --highrate: create hourly highrate(1Hz) rinex"
-  echo "        --noauto: no automatic need specific date and time"
-  echo "            --set-date: Set date in format <YYYY-MM-DD>"
-  echo "            --set-hour: Set spesific hour using leading zero"
-  echo "        --no-archive: don't move file to archive"
-  echo "   -v | --version : check versrion"
-  echo "   -h | --help : help screen"
+  echo "        --daily        : create daily file 30s"
+  echo "        --highrate     : create hourly highrate(1Hz) rinex"
+  echo "  -qc | --qcheck       : use quality check mode, Anubis"
+  echo "        --noauto       : no automatic need specific date and time"
+  echo "            --set-date <YYYY-MM-DD> : Set date in format"
+  echo "            --set-hour <HH> : Set spesific hour using leading zero"
+  echo "        --no-archive   : don't move file to archive"
+  echo "   -v | --version      : check versrion"
+  echo "   -h | --help         : help screen"
   echo "-----------------------------------------------------------------------"
   echo " Authors:"
   echo "         - Dimitris Anastasiou, dganastasiou@gmail.com"
@@ -93,6 +94,7 @@ DAILY=0
 HIGHRATE=1
 NOAUTO=0
 NOARCHIVE=0
+QCHECK=0
 
 #  Alternative options for convbin conversion programm
 ALTOBS="-od -os -oi -ot"
@@ -147,6 +149,10 @@ do
             DAILY=0
             shift
             ;;
+        -qc | --qcheck)
+            QCHECK=1
+            shift
+            ;;
 #        --rate)
 #            RATE=${2}
 #            shift 2
@@ -184,8 +190,16 @@ do
     esac
 done
 
-
-
+#Check Anubis if qcheck selected
+if [ ${QCHECK} -eq 1 ]
+then
+    if ! [ -x "$(command -v anubis)" ]
+    then
+        echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: Anubis is not installed" >> ${GLOG} 2>&1
+        exit 1
+    fi
+    # TODO CHECK if exist plot_Anubis gs curl
+fi
 # set current date for ubx data
 # dateubx=$(date +%Y%m%d)
 
@@ -326,6 +340,8 @@ then
         cp ${crzfile} ${RNX_DAILY}/${year}/${doy}/${yy}d/.
     fi
 
+# //////////////////////////////////////////////////////////////////////////////
+## create one RINEX file  per hour > Hatanaka > Compressed
 elif [ ${HIGHRATE} -eq  1 ]
 then
     # LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_h_${SITE_NAME}_$(date +%Y_%m_%d).log
@@ -445,6 +461,34 @@ then
                 -crux ${HEADER_INFO} -f  >> ${LOG} 2>&1
 
             wait
+
+            # Make quality check
+            QCHECK=0
+            ## QCHECK not working yet for hourly files
+            if [ ${QCHECK} -eq 1 ]
+            then
+                brdc_fname=BRDC00IGS_R_${year}${doy}0000_01D_MN.rnx
+                #download Broadcast ephemeris
+                wget --user=${BRDC_USER} \
+                     --password=${BRDC_PASSWD} \
+                     --auth-no-challenge \
+                     --no-clobber \
+                     ${BRDC_HOST}${year}/brdc/${brdc_fname}.gz
+                
+                #uncompress brdc file
+                gzip -d ${brdc_fname}.gz
+                
+                #make anubis
+                anubis \
+                    :gen:beg "${rnx_date} 00:00:00" \
+                    :gen:end "${rnx_date} 23:59:59" \
+                    :gen:int 30 \
+                    :inp:rinexo ${rnxhfile} \
+                    :inp:rinexn ${brdc_fname} \
+                    :out:xtr test.xtr \
+                    -x ${XMLFPATH}
+
+            fi
 
             # Convert to Hatanaka format
             RNX2CRX -f ${rnxhfile} >>${LOG} 2>&1
