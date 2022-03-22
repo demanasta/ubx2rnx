@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VERSION="ubx2rnx - v0.1b22"
+VERSION="ubx2rnx - v0.1b2333"
 
 # //////////////////////////////////////////////////////////////////////////////
 #HELP FUNCTION
@@ -12,6 +12,10 @@ function help {
   echo "        --config <file>: input confoguration file"
   echo "        --daily : create daily file 30s"
   echo "        --highrate: create hourly highrate(1Hz) rinex"
+  echo "        --noauto: no automatic need specific date and time"
+  echo "            --set-date: Set date in format <YYYY-MM-DD>"
+  echo "            --set-hour: Set spesific hour using leading zero"
+  echo "        --no-archive: don't move file to archive"
   echo "   -v | --version : check versrion"
   echo "   -h | --help : help screen"
   echo "-----------------------------------------------------------------------"
@@ -25,6 +29,7 @@ function help {
   echo "   2021.09.21 : Initial beta verion"
   echo "   2022.03.10 : Many updates, add to github repository"
   echo "   2022.03.14 : Merge multiple ubx files to hourly rinex"
+  echo "   2022.03.22 : Develop manual mode switch --noauto"
   exit 1
 }
 
@@ -86,6 +91,8 @@ fi
 # Pre-defined variables
 DAILY=0
 HIGHRATE=1
+NOAUTO=0
+NOARCHIVE=0
 
 #  Alternative options for convbin conversion programm
 ALTOBS="-od -os -oi -ot"
@@ -144,6 +151,24 @@ do
 #            RATE=${2}
 #            shift 2
 #            ;;
+        --noauto)
+            NOAUTO=1
+            shift
+            ;;
+        --set-date)
+            SPDATE=${2}
+            #TODO check if argument is correct
+            shift 2
+            ;;
+        --set-hour)
+            SPHOUR=${2}
+            #TODO check if argument is correct
+            shift 2
+            ;;
+        --no-archive)
+            NOARCHIVE=1
+            shift 
+            ;;
         -h | --help)
             help
             ;;
@@ -176,9 +201,20 @@ cd ${UBX_DIR}
 if [ ${DAILY} -eq 1 ]
 then
     LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
-    year=$(date --date="-1 day" -u +%Y)
-    yy=$(date --date="-1 day" -u +%y)
-    doy=$(date --date="-1 day" -u +%j)
+    # Set date auto or manual
+    if [ ${NOAUTO} -eq 0 ]
+    then
+        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
+        year=$(date --date="-1 day" -u +%Y)
+        yy=$(date --date="-1 day" -u +%y)
+        doy=$(date --date="-1 day" -u +%j)
+    else
+        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_m_${SITE_NAME}_$(date +%Y_%m_%d).log
+        year=$(date --date="${SPDATE}" -u +%Y)
+        yy=$(date --date="${SPDATE}" -u +%y)
+        doy=$(date --date="${SPDATE}" -u +%j)
+        echo ${year} ${yy} ${doy}
+    fi
 
     if [ ${RNX_VER} == "2.11" ]
     then
@@ -263,38 +299,51 @@ then
         echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: use rinex 2.11 or 3.04 > config file" >> ${LOG} 2>&1
         exit 1
     fi
-    # TO DO: push files to final ftp potision
-    # 30-s YYYY/DDD/YYt/
-
-    if test -d ${RNX_DAILY}/${year}
+    
+    # Check NOARCHIVE
+    if [ ${NOARCHIVE} -eq 0 ]
     then
-        if test -d ${RNX_DAILY}/${year}/${doy}
+        # 30-s YYYY/DDD/YYt/
+        if test -d ${RNX_DAILY}/${year}
         then
-            if test -d ${RNX_DAILY}/${year}/${doy}/${yy}d
+            if test -d ${RNX_DAILY}/${year}/${doy}
             then
-                echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory exists" >> ${LOG} 2>&1
+                if test -d ${RNX_DAILY}/${year}/${doy}/${yy}d
+                then
+                    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory exists" >> ${LOG} 2>&1
+                else
+                    mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
+                fi
             else
+                mkdir ${RNX_DAILY}/${year}/${doy}
                 mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
             fi
         else
+            mkdir ${RNX_DAILY}/${year}
             mkdir ${RNX_DAILY}/${year}/${doy}
             mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
         fi
-    else
-        mkdir ${RNX_DAILY}/${year}
-        mkdir ${RNX_DAILY}/${year}/${doy}
-        mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
+        cp ${crzfile} ${RNX_DAILY}/${year}/${doy}/${yy}d/.
     fi
-
-    cp ${crzfile} ${RNX_DAILY}/${year}/${doy}/${yy}d/.
 
 elif [ ${HIGHRATE} -eq  1 ]
 then
-    LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_h_${SITE_NAME}_$(date +%Y_%m_%d).log
-    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG] : data to hourly RINEX ......." >> ${LOG} 2>&1
+    # LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_h_${SITE_NAME}_$(date +%Y_%m_%d).log
+    # echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG] : data to hourly RINEX ......." >> ${LOG} 2>&1
     #ubx_file=$(date --date="-1 hour" -u +%Y-%m-%d_%H)-00-00_${SITE_NAME}.ubx
 
-    hod_fname=$(date --date="-7 hour" -u +%Y-%m-%d_%H-)
+    # set date auto of manual
+    if [ ${NOAUTO} -eq 0 ]
+    then
+        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_h_${SITE_NAME}_$(date +%Y_%m_%d).log
+        # Set date-time one hour ago, used for autmated settings
+        hod_fname=$(date --date="-1 hour" -u +%Y-%m-%d_%H-)
+    else
+        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_m_${SITE_NAME}_$(date +%Y_%m_%d).log
+        # Set manual date/time
+        hod_fname=${SPDATE}_${SPHOUR}-
+    fi
+    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG] : data to hourly RINEX ......." >> ${LOG} 2>&1
 #    count_ubx=0
     for ubx_file in `ls ${hod_fname}*_${SITE_NAME}.ubx`
     do
@@ -410,44 +459,44 @@ then
             echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: use rinex 2.11 or 3.04 > config file" ${LOG} 2>&1
             exit 1
         fi
-        #YYYY/DDD/YYt/HH/mmmmDDDHMM.YYt.Z
-        if test -d ${RNX_HIGH}/${year}
+       
+        # Move RINEX to archive folder
+        if [ ${NOARCHIVE} -eq 0 ]
         then
-            if test -d ${RNX_HIGH}/${year}/${doy}
+            #YYYY/DDD/YYt/HH/mmmmDDDHMM.YYt.Z
+            if test -d ${RNX_HIGH}/${year}
             then
-                if test -d ${RNX_HIGH}/${year}/${doy}/${yy}d
+                if test -d ${RNX_HIGH}/${year}/${doy}
                 then
-                    if test -d ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
+                    if test -d ${RNX_HIGH}/${year}/${doy}/${yy}d
                     then
-                        echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory exists" >> ${LOG} 2>&1
+                        if test -d ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
+                        then
+                            echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory exists" >> ${LOG} 2>&1
+                        else
+                            mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
+                        fi
                     else
+                        mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d
                         mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
                     fi
                 else
+                    mkdir ${RNX_HIGH}/${year}/${doy}
                     mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d
                     mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
                 fi
             else
+                mkdir ${RNX_HIGH}/${year}
                 mkdir ${RNX_HIGH}/${year}/${doy}
                 mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d
                 mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
             fi
-        else
-            mkdir ${RNX_HIGH}/${year}
-            mkdir ${RNX_HIGH}/${year}/${doy}
-            mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d
-            mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
+            cp ${crzhfile} ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}/.
         fi
-
-        cp ${crzhfile} ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}/.
-
 else
     echo "choose RATE 30-s or 1Hz" >> ${LOG} 2>&1
     exit 1
 fi
-
-
-
 
 echo "$(date +%Y.%m.%d_%H:%M:%S) [STATUS]: ubx2rnx status exit" $? >>${LOG} 2>&1
 exit 0
