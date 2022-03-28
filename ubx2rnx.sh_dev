@@ -13,7 +13,7 @@ function help {
   echo "        --daily        : create daily file 30s"
   echo "        --highrate     : create hourly highrate(1Hz) rinex"
   echo "  -qc | --qcheck       : use quality check mode, Anubis"
-  echo "        --nrun_plotanubisoauto       : no automatic need specific date and time"
+  echo "        --noauto       : no automatic need specific date and time"
   echo "            --set-date <YYYY-MM-DD> : Set date in format"
   echo "            --set-hour <HH> : Set spesific hour using leading zero"
   echo "        --no-archive   : don't move file to archive"
@@ -90,7 +90,7 @@ fi
 
 
 # //////////////////////////////////////////////////////////////////////////////
-# Set variables 
+# Define functions 
 #run_anubis() {
 #            #make anubis
 #            anubis :gen:beg "${1} 00:00:00" \
@@ -233,17 +233,17 @@ cd ${UBX_DIR}
 ## RATE 30-s create one RINEX file for previous day > Hatanaka > Compressed
 if [ ${DAILY} -eq 1 ]
 then
-    LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
+    #LOG=/home/mitsos/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
     # Set date auto or manual
     if [ ${NOAUTO} -eq 0 ]
     then
-        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
+        LOG=${HOME}/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
         year=$(date --date="-1 day" -u +%Y)
         yy=$(date --date="-1 day" -u +%y)
         doy=$(date --date="-1 day" -u +%j)
         rnx_date=$(date --date="-1 day" -u +%Y-%m-%d)
     else
-        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_m_${SITE_NAME}_$(date +%Y_%m_%d).log
+        LOG=${HOME}/Apps/ubx2rnx/log/ubx2rnx_m_${SITE_NAME}_$(date +%Y_%m_%d).log
         year=$(date --date="${SPDATE}" -u +%Y)
         yy=$(date --date="${SPDATE}" -u +%y)
         doy=$(date --date="${SPDATE}" -u +%j)
@@ -285,7 +285,7 @@ then
         # Make quality check
         QCKECK=0
         #TODO for rinex v2
-        if [ ${QCHECK} -eq 1 ]
+        if [ ${QCHECK} -eq 2 ]
         then
             brdc_fname=BRDC00IGS_R_${year}${doy}0000_01D_MN.rnx
             #download Broadcast ephemeris
@@ -435,11 +435,11 @@ then
     # set date auto of manual
     if [ ${NOAUTO} -eq 0 ]
     then
-        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_h_${SITE_NAME}_$(date +%Y_%m_%d).log
+        LOG=${HOME}/Apps/ubx2rnx/log/ubx2rnx_h_${SITE_NAME}_$(date +%Y_%m_%d).log
         # Set date-time one hour ago, used for autmated settings
         hod_fname=$(date --date="-1 hour" -u +%Y-%m-%d_%H-)
     else
-        LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_m_${SITE_NAME}_$(date +%Y_%m_%d).log
+        LOG=${HOME}/Apps/ubx2rnx/log/ubx2rnx_m_${SITE_NAME}_$(date +%Y_%m_%d).log
         # Set manual date/time
         hod_fname=${SPDATE}_${SPHOUR}-
     fi
@@ -546,10 +546,9 @@ then
 
             wait
 
-            # Make quality check
-            QCHECK=0
+            # Make quality check TODO
             ## QCHECK not working yet for hourly files
-            if [ ${QCHECK} -eq 1 ]
+            if [ ${QCHECK} -eq 2 ]
             then
                 brdc_fname=BRDC00IGS_R_${year}${doy}0000_01D_MN.rnx
                 #download Broadcast ephemeris
