@@ -13,7 +13,7 @@ function help {
   echo "        --daily        : create daily file 30s"
   echo "        --highrate     : create hourly highrate(1Hz) rinex"
   echo "  -qc | --qcheck       : use quality check mode, Anubis"
-  echo "        --noauto       : no automatic need specific date and time"
+  echo "        --nrun_plotanubisoauto       : no automatic need specific date and time"
   echo "            --set-date <YYYY-MM-DD> : Set date in format"
   echo "            --set-hour <HH> : Set spesific hour using leading zero"
   echo "        --no-archive   : don't move file to archive"
@@ -87,6 +87,25 @@ then
     echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: gzip is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
+
+
+# //////////////////////////////////////////////////////////////////////////////
+# Set variables 
+#run_anubis() {
+#            #make anubis
+#            anubis :gen:beg "${1} 00:00:00" \
+#                :gen:end "${1} 23:59:59" \
+#                :gen:int 30 \
+#                :inp:rinexo ${2} \
+#                :inp:rinexn ${3} \
+#                :out:xtr ${4} \
+#                -x ${5}
+#            return 0
+#            }
+
+run_plotanubis() {
+    plot_Anubis.pl --verb --plot ${1} --all --ifile ${2}
+}
 
 # //////////////////////////////////////////////////////////////////////////////
 # Pre-defined variables
@@ -222,12 +241,13 @@ then
         year=$(date --date="-1 day" -u +%Y)
         yy=$(date --date="-1 day" -u +%y)
         doy=$(date --date="-1 day" -u +%j)
+        rnx_date=$(date --date="-1 day" -u +%Y-%m-%d)
     else
         LOG=/home/proion/Apps/ubx2rnx/log/ubx2rnx_m_${SITE_NAME}_$(date +%Y_%m_%d).log
         year=$(date --date="${SPDATE}" -u +%Y)
         yy=$(date --date="${SPDATE}" -u +%y)
         doy=$(date --date="${SPDATE}" -u +%j)
-        echo ${year} ${yy} ${doy}
+        rnx_date=$(date --date="${SPDATE}" -u +%Y-%m-%d)
     fi
 
     if [ ${RNX_VER} == "2.11" ]
@@ -262,6 +282,33 @@ then
             -kv -epo_beg ${year}${doy}_000000 -d 86340 -smp 30 \
             -crux ${HEADER_INFO} -f >>${LOG} 2>&1
 
+        # Make quality check
+        QCKECK=0
+        #TODO for rinex v2
+        if [ ${QCHECK} -eq 1 ]
+        then
+            brdc_fname=BRDC00IGS_R_${year}${doy}0000_01D_MN.rnx
+            #download Broadcast ephemeris
+            wget --user=${BRDC_USER} \
+                 --password=${BRDC_PASSWD} \
+                 --auth-no-challenge \
+                 --no-clobber \
+                  ${BRDC_HOST}${year}/brdc/${brdc_fname}.gz
+                
+            #uncompress brdc file
+            gzip -d ${brdc_fname}.gz
+                
+            #make anubis
+            anubis \
+                :gen:beg "${rnx_date} 00:00:00" \
+                :gen:end "${rnx_date} 23:59:59" \
+                :gen:int 30 \
+                :inp:rinexo ${rnxhfile} \
+                :inp:rinexn ${brdc_fname} \
+                :out:xtr test.xtr \
+                -x ${XMLFPATH}
+        fi
+
         # convert to Hatanaka (d) and compressed (.Z) format
         RNX2CRZ -f ${rnxfile} >>${LOG} 2>&1
 
@@ -295,10 +342,47 @@ then
         rnxfile=${fname}.rnx
         crxfile=${fname}.crx
         crzfile=${fname}.crx.gz
+        xtrfile=${fname}.xtr
 
         gfzrnx -finp ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}??00_01H_${HRATE}_${tt}.rnx -fout ${rnxfile} \
             -kv -epo_beg ${year}${doy}_000000 -d 86340 -smp 30 \
             -crux ${HEADER_INFO} -f >> ${LOG} 2>&1
+
+        # Make quality check
+        if [ ${QCHECK} -eq 1 ]
+        then
+            brdc_fname=BRDC00IGS_R_${year}${doy}0000_01D_MN.rnx
+            #download Broadcast ephemeris
+            if test -f ${brdc_fname}.gz
+            then
+                 echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: file ${brdc_fname}.gz exists "   
+            else
+                echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Download ${brdc_fname}.gz"
+                wget --user=${BRDC_USER} \
+                     --password=${BRDC_PASSWD} \
+                     --auth-no-challenge \
+                     --no-clobber --continue \
+                      ${BRDC_HOST}${year}/brdc/${brdc_fname}.gz \
+                     -O ${brdc_fname}.gz
+            fi
+            #uncompress brdc file
+            gzip -f -d ${brdc_fname}.gz
+
+            #make anubis
+            anubis                 :gen:beg "${rnx_date} 00:00:00" \
+                :gen:end "${rnx_date} 23:59:59" \
+                :gen:int 30 \
+                :gen:sys "GPS GLO GAL BDS QZS" \
+                :inp:rinexo ${rnxfile} \
+                :inp:rinexn ${brdc_fname} \
+                :out:xtr ${xtrfile} \
+                :out:verb=1
+
+
+            echo $?    
+                # Plot Results with Plot Anubis.pl
+                run_plotanubis ${fname}  ${xtrfile}
+        fi
 
         # Convert to Hatanaka format
         RNX2CRX -f ${rnxfile} >> ${LOG} 2>&1
