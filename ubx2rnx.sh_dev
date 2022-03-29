@@ -283,7 +283,7 @@ then
             -crux ${HEADER_INFO} -f >>${LOG} 2>&1
 
         # Make quality check
-        QCKECK=0
+        #QCKECK=0
         #TODO for rinex v2
         if [ ${QCHECK} -eq 2 ]
         then
@@ -315,6 +315,7 @@ then
         # remove temporary files
         rm -rf  ${SITE_NAME}${doy}*.${yy}o
 
+    # TODO check only first char of rinex version
     elif [ ${RNX_VER} == "3.04" ]
     then
         #produce names for RINEX 3 format
@@ -369,7 +370,8 @@ then
             gzip -f -d ${brdc_fname}.gz
 
             #make anubis
-            anubis                 :gen:beg "${rnx_date} 00:00:00" \
+            anubis  -x ${XMLFPATH} \
+                :gen:beg "${rnx_date} 00:00:00" \
                 :gen:end "${rnx_date} 23:59:59" \
                 :gen:int 30 \
                 :gen:sys "GPS GLO GAL BDS QZS" \
@@ -379,7 +381,7 @@ then
                 :out:verb=1
 
 
-            echo $?    
+            echo "Anubis status=" $?    
                 # Plot Results with Plot Anubis.pl
                 run_plotanubis ${fname}  ${xtrfile}
         fi
@@ -391,8 +393,8 @@ then
         gzip -f -c ${crxfile} > ${crzfile}
 
         # remove temporary files
-        rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
-        rm -rf ${rnxfile} ${crxfile} *.rnx *.crx
+#        rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
+#        rm -rf ${rnxfile} ${crxfile} *.rnx *.crx
     else
         echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: use rinex 2.11 or 3.04 > config file" >> ${LOG} 2>&1
         exit 1
