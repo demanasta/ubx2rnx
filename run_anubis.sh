@@ -1,4 +1,4 @@
-#! /bin/env bash
+#!/usr/bin/env bash
 anubis :gen:beg "${1} 00:00:00" \
                 :gen:end "${1} 23:59:59" \
                 :gen:int 30 \

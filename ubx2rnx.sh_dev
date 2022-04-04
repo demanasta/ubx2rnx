@@ -35,7 +35,8 @@ function help {
 }
 
 #BASH SETTINGS
-set -e
+#set -u #Ignore anubis errors? not sure that works MAYBE not need it
+set +e # TODO turn to -e in the final version
 set -o pipefail
 
 #Test if log directory exists, if not create new
@@ -91,20 +92,24 @@ fi
 
 # //////////////////////////////////////////////////////////////////////////////
 # Define functions 
-#run_anubis() {
-#            #make anubis
-#            anubis :gen:beg "${1} 00:00:00" \
-#                :gen:end "${1} 23:59:59" \
-#                :gen:int 30 \
-#                :inp:rinexo ${2} \
-#                :inp:rinexn ${3} \
-#                :out:xtr ${4} \
-#                -x ${5}
-#            return 0
-#            }
+run_anubis() {
+    echo "Anubis intro=" $?
+            #make anubis
+            anubis  -x ${XMLFPATH} \
+                :gen:beg "${rnx_date} 00:00:00" \
+                :gen:end "${rnx_date} 23:59:59" \
+                :gen:int 30 \
+                :gen:sys "GPS GLO GAL BDS QZS" \
+                :inp:rinexo ${rnxfile} \
+                :inp:rinexn ${brdc_fname} \
+                :out:xtr ${xtrfile} \
+                :out:verb=1
+    echo "Anubis outro="$?
+            return 0
+            }
 
 run_plotanubis() {
-    plot_Anubis.pl --verb --plot ${1} --all --ifile ${2}
+    plot_Anubis.pl --plot ${1} --all --ifile ${2}
 }
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -370,20 +375,21 @@ then
             gzip -f -d ${brdc_fname}.gz
 
             #make anubis
-            anubis  -x ${XMLFPATH} \
-                :gen:beg "${rnx_date} 00:00:00" \
-                :gen:end "${rnx_date} 23:59:59" \
-                :gen:int 30 \
-                :gen:sys "GPS GLO GAL BDS QZS" \
-                :inp:rinexo ${rnxfile} \
-                :inp:rinexn ${brdc_fname} \
-                :out:xtr ${xtrfile} \
-                :out:verb=1
+#            anubis  -x ${XMLFPATH} \
+#                :gen:beg "${rnx_date} 00:00:00" \
+#                :gen:end "${rnx_date} 23:59:59" \
+#                :gen:int 30 \
+#                :gen:sys "GPS GLO GAL BDS QZS" \
+#                :inp:rinexo ${rnxfile} \
+#                :inp:rinexn ${brdc_fname} \
+#                :out:xtr ${xtrfile} \
+#                :out:verb=1
 
-
+run_anubis ${XMLFPATH} ${rnx_date} ${rnxfile} ${brdc_fname} ${xtrfile}
             echo "Anubis status=" $?    
                 # Plot Results with Plot Anubis.pl
                 run_plotanubis ${fname}  ${xtrfile}
+
         fi
 
         # Convert to Hatanaka format
