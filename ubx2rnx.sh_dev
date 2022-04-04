@@ -93,7 +93,7 @@ fi
 # //////////////////////////////////////////////////////////////////////////////
 # Define functions 
 run_anubis() {
-    echo "Anubis intro=" $?
+#    echo "Anubis intro=" $?
             #make anubis
             anubis  -x ${XMLFPATH} \
                 :gen:beg "${rnx_date} 00:00:00" \
@@ -104,7 +104,7 @@ run_anubis() {
                 :inp:rinexn ${brdc_fname} \
                 :out:xtr ${xtrfile} \
                 :out:verb=1
-    echo "Anubis outro="$?
+#    echo "Anubis outro="$?
             return 0
             }
 
@@ -385,10 +385,18 @@ then
 #                :out:xtr ${xtrfile} \
 #                :out:verb=1
 
-run_anubis ${XMLFPATH} ${rnx_date} ${rnxfile} ${brdc_fname} ${xtrfile}
-            echo "Anubis status=" $?    
-                # Plot Results with Plot Anubis.pl
-                run_plotanubis ${fname}  ${xtrfile}
+            ## Run function run_anubis
+            run_anubis ${XMLFPATH} ${rnx_date} ${rnxfile} ${brdc_fname} ${xtrfile}
+#            echo "Anubis status=" $?    
+
+            ## Plot Results with Plot Anubis.pl
+            run_plotanubis ${fname}  ${xtrfile}
+
+            ## convert eps to png
+            for i in `ls ${fname}*.eps`
+            do
+                gs -dSAFER -dBATCH -dNOPAUSE -dEPSCrop -r600 -sDEVICE=pngalpha -sOutputFile=${i:0:42}.png ${i}
+            done
 
         fi
 
@@ -420,6 +428,15 @@ run_anubis ${XMLFPATH} ${rnx_date} ${rnxfile} ${brdc_fname} ${xtrfile}
                 else
                     mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
                 fi
+                if [ $QCHECK -eq 1 ]
+                then
+                    if test -d ${RNX_DAILY}/${year}/${doy}/${yy}qc
+                    then
+                        echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory exists" >> ${LOG} 2>&1
+                    else
+                        mkdir ${RNX_DAILY}/${year}/${doy}/${yy}qc
+                    fi
+                fi
             else
                 mkdir ${RNX_DAILY}/${year}/${doy}
                 mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
@@ -429,7 +446,10 @@ run_anubis ${XMLFPATH} ${rnx_date} ${rnxfile} ${brdc_fname} ${xtrfile}
             mkdir ${RNX_DAILY}/${year}/${doy}
             mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
         fi
+        ## Copy all file to archive
         cp ${crzfile} ${RNX_DAILY}/${year}/${doy}/${yy}d/.
+        cp ${xtrfile} ${RNX_DAILY}/${year}/${doy}/${yy}qc/.
+        cp ${fname}*.png ${RNX_DAILY}/${year}/${doy}/${yy}qc/.
     fi
 
 # //////////////////////////////////////////////////////////////////////////////
