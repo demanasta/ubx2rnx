@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-VERSION="ubx2rnx - v0.1b23"
+VERSION="ubx2rnx - v0.1b24"
 
 # //////////////////////////////////////////////////////////////////////////////
 #HELP FUNCTION
@@ -16,7 +16,8 @@ function help {
   echo "        --noauto       : no automatic need specific date and time"
   echo "            --set-date <YYYY-MM-DD> : Set date in format"
   echo "            --set-hour <HH> : Set spesific hour using leading zero"
-  echo "        --no-archive   : don't move file to archive"
+  echo "        --no-archive   : don't move file to archive"i
+  echo "        --upload-ftp   : Upload files to public ftp"
   echo "   -v | --version      : check versrion"
   echo "   -h | --help         : help screen"
   echo "-----------------------------------------------------------------------"
@@ -31,6 +32,7 @@ function help {
   echo "   2022.03.10 : Many updates, add to github repository"
   echo "   2022.03.14 : Merge multiple ubx files to hourly rinex"
   echo "   2022.03.22 : Develop manual mode switch --noauto"
+  echo "   2022.05.31 : New function, upload file to ftp"
   exit 1
 }
 
@@ -112,6 +114,19 @@ run_plotanubis() {
     plot_Anubis.pl --plot ${1} --all --ifile ${2}
 }
 
+ftp_upload() {
+    ftp -n ${FTPHOST} << EOF
+        quote USER ${FTPUSER}
+        quote PASS ${FTPPASSWD}
+        cd ${SITE_NAME}/${year}
+        mkdir ${doy}
+        cd ${doy}
+        put ${1}
+        quit
+EOF
+return 0
+}
+
 # //////////////////////////////////////////////////////////////////////////////
 # Pre-defined variables
 DAILY=0
@@ -119,6 +134,7 @@ HIGHRATE=1
 NOAUTO=0
 NOARCHIVE=0
 QCHECK=0
+UPFTP=0
 
 #  Alternative options for convbin conversion programm
 ALTOBS="-od -os -oi -ot"
@@ -131,19 +147,19 @@ RECOPT="-TADJ=1.0"
 #GET CML ARGUMENTS
 if [ "$#" == 0 ]
 then
-  echo "[ERROR]: No input file"
-  help
+echo "[ERROR]: No input file"
+help
 fi
 
 while [ $# -gt 0  ]
 do
-    case "$1" in
-        --config)
-            conf_file=${2}
-            # Check configuration file
-            if [ ! -f ${conf_file} ]
-            then
-                echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: config file ${conf_file} does not exis" >> ${GLOG} 2>&1
+case "$1" in
+    --config)
+        conf_file=${2}
+        # Check configuration file
+        if [ ! -f ${conf_file} ]
+        then
+            echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: config file ${conf_file} does not exis" >> ${GLOG} 2>&1
                 exit 1
             else
                 echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: load configuration file ${conf_file} ..." >> ${GLOG} 2>&1
@@ -198,6 +214,10 @@ do
         --no-archive)
             NOARCHIVE=1
             shift 
+            ;;
+        --upload-ftp)
+            UPFTP=1
+            shift
             ;;
         -h | --help)
             help
@@ -349,6 +369,7 @@ then
         crxfile=${fname}.crx
         crzfile=${fname}.crx.gz
         xtrfile=${fname}.xtr
+        xtrzfile=${fname}.xtr.gz
 
         gfzrnx -finp ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}??00_01H_${HRATE}_${tt}.rnx -fout ${rnxfile} \
             -kv -epo_beg ${year}${doy}_000000 -d 86340 -smp 30 \
@@ -357,7 +378,7 @@ then
         # Make quality check
         if [ ${QCHECK} -eq 1 ]
         then
-            brdc_fname=BRDC00IGS_R_${year}${doy}0000_01D_MN.rnx
+            brdc_fname=BRD400DLR_S_${year}${doy}0000_01D_MN.rnx
             #download Broadcast ephemeris
             if test -f ${brdc_fname}.gz
             then
@@ -387,6 +408,7 @@ then
 
             ## Run function run_anubis
             run_anubis ${XMLFPATH} ${rnx_date} ${rnxfile} ${brdc_fname} ${xtrfile}
+            gzip -f -c ${xtrfile} > ${xtrzfile}
 #            echo "Anubis status=" $?    
 
             ## Plot Results with Plot Anubis.pl
@@ -448,9 +470,30 @@ then
         fi
         ## Copy all file to archive
         cp ${crzfile} ${RNX_DAILY}/${year}/${doy}/${yy}d/.
-        cp ${xtrfile} ${RNX_DAILY}/${year}/${doy}/${yy}qc/.
+        cp ${xtrzfile} ${RNX_DAILY}/${year}/${doy}/${yy}qc/.
         cp ${fname}*.png ${RNX_DAILY}/${year}/${doy}/${yy}qc/.
     fi
+
+    ## Upload file to Public FTP
+    if [ $UPFTP -eq 1 ]
+    then
+        echo "TESADJKAHBSFLKABSFD"
+        ## Make new folder to ftp
+        ## Upload three files
+        echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Upload to FTP (${FTPHOST}): ${crzfile}" >> ${LOG} 2>&1
+        ftp_upload ${crzfile}
+        ## Upload qc file if exist to public ftp
+        if [ $QCHECK -eq 1 ]
+        then
+            echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Upload to FTP (${FTPHOST}): ${xtrzfile}" >> ${LOG} 2>&1
+            ftp_upload ${xtrzfile}
+            echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Upload to FTP (${FTPHOST}): ${fname}_sum_all.png" >> ${LOG} 2>&1  
+        ftp_upload ${fname}_sum_all.png
+    #    echo ${FTPHOST}
+        fi
+    fi
+
+
 
 # //////////////////////////////////////////////////////////////////////////////
 ## create one RINEX file  per hour > Hatanaka > Compressed
@@ -655,4 +698,3 @@ fi
 
 echo "$(date +%Y.%m.%d_%H:%M:%S) [STATUS]: ubx2rnx status exit" $? >>${LOG} 2>&1
 exit 0
-

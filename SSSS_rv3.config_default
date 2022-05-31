@@ -23,9 +23,16 @@ tt="MO" #type of data: MO = Mixed Observation data
 HRATE="01S" # raw data sample rate for hourly conversion
 DRATE="30S" # rate for daily rinex data format
 
-## FTP configuration - old ersion. only for debugging
-#HOST=''
-#USER=""
-#PASSWD=""
-#REMOTEPATH=''
+## FOR ANUBIS PARAMETERS
+## CURL BRDC ephemeris for wuality check
+BRDC_HOST=https://cddis.nasa.gov/archive/gnss/data/daily/
+BRDC_USER=
+BRDC_PASSWD=
 
+## XML file path
+XMLFPATH=
+
+## FTP Credencials for public ftp data
+FTPHOST=''
+FTPUSER=''
+FTPPASSWD=''
