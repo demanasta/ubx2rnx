@@ -118,6 +118,7 @@ ftp_upload() {
     ftp -n ${FTPHOST} << EOF
         quote USER ${FTPUSER}
         quote PASS ${FTPPASSWD}
+        binary
         cd ${SITE_NAME}/${year}
         mkdir ${doy}
         cd ${doy}
@@ -446,7 +447,7 @@ then
             then
                 if test -d ${RNX_DAILY}/${year}/${doy}/${yy}d
                 then
-                    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory exists" >> ${LOG} 2>&1
+		    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory ${RNX_DAILY}/${year}/${doy}/${yy}d exists" >> ${LOG} 2>&1
                 else
                     mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
                 fi
@@ -454,8 +455,9 @@ then
                 then
                     if test -d ${RNX_DAILY}/${year}/${doy}/${yy}qc
                     then
-                        echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory exists" >> ${LOG} 2>&1
+		        	    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory  ${RNX_DAILY}/${year}/${doy}/${yy}qc exists" >> ${LOG} 2>&1
                     else
+		            	echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Create directory  ${RNX_DAILY}/${year}/${doy}/${yy}qc" >> ${LOG} 2>&1
                         mkdir ${RNX_DAILY}/${year}/${doy}/${yy}qc
                     fi
                 fi
@@ -469,8 +471,11 @@ then
             mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
         fi
         ## Copy all file to archive
+	    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Copy file ${crzfile} --> ${RNX_DAILY}/${year}/${doy}/${yy}d/" >> ${LOG} 2>&1
         cp ${crzfile} ${RNX_DAILY}/${year}/${doy}/${yy}d/.
+    	echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Copy file ${xtrzfile} --> ${RNX_DAILY}/${year}/${doy}/${yy}qc/" >> ${LOG} 2>&1
         cp ${xtrzfile} ${RNX_DAILY}/${year}/${doy}/${yy}qc/.
+	    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Copy file PNG files --> ${RNX_DAILY}/${year}/${doy}/${yy}qc/" >> ${LOG} 2>&1
         cp ${fname}*.png ${RNX_DAILY}/${year}/${doy}/${yy}qc/.
     fi
 
