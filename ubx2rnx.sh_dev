@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 VERSION="ubx2rnx - v0.1b24"
 
-# //////////////////////////////////////////////////////////////////////////////
-#HELP FUNCTION
+## //////////////////////////////////////////////////////////////////////////////
+## HELP FUNCTION
 function help {
   echo " Program Name : ubx2rnx.sh"
   echo " Version : ${VERSION}"
@@ -36,12 +36,12 @@ function help {
   exit 1
 }
 
-#BASH SETTINGS
-#set -u #Ignore anubis errors? not sure that works MAYBE not need it
+## BASH SETTINGS
+## set -u #Ignore anubis errors? not sure that works MAYBE not need it
 set +e # TODO turn to -e in the final version
 set -o pipefail
 
-#Test if log directory exists, if not create new
+## Test if log directory exists, if not create new
 if test -d log
 then
     GLOG=log/geninfo.log
@@ -52,39 +52,39 @@ fi
 
 echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: ... START ubx2rnx script ..." >> ${GLOG} 2>&1
 
-# //////////////////////////////////////////////////////////////////////////////
-# CHECK if necessary programs exist
-# convbin, RNX2CRX/Z, gfzrnx
+## //////////////////////////////////////////////////////////////////////////////
+## CHECK if necessary programs exist
+## convbin, RNX2CRX/Z, gfzrnx
 
-#Check for convbin
+## Check for convbin
 if ! [ -x "$(command -v convbin)" ]
 then
     echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: convbin is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
-#Check RNX2CRX
+## Check RNX2CRX
 if ! [ -x "$(command -v RNX2CRX)" ]
 then
     echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: RNX2CRX/Z is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
-#Check RNX2CRZ
+## Check RNX2CRZ
 if ! [ -x "$(command -v RNX2CRZ)" ]
 then
     echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: RNX2CRZ is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
-#Check compress
+## Check compress
 if ! [ -x "$(command -v compress)" ]
 then
     echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: compress is not installed" >> ${GLOG} 2>&1
     exit 1
 fi
 
-#Check gzip
+## Check gzip
 if ! [ -x "$(command -v gzip)" ]
 then
     echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: gzip is not installed" >> ${GLOG} 2>&1
@@ -92,8 +92,8 @@ then
 fi
 
 
-# //////////////////////////////////////////////////////////////////////////////
-# Define functions 
+## //////////////////////////////////////////////////////////////////////////////
+## Define functions 
 run_anubis() {
 #    echo "Anubis intro=" $?
             #make anubis
@@ -128,8 +128,8 @@ EOF
 return 0
 }
 
-# //////////////////////////////////////////////////////////////////////////////
-# Pre-defined variables
+## //////////////////////////////////////////////////////////////////////////////
+## Pre-defined variables
 DAILY=0
 HIGHRATE=1
 NOAUTO=0
@@ -137,15 +137,15 @@ NOARCHIVE=0
 QCHECK=0
 UPFTP=0
 
-#  Alternative options for convbin conversion programm
+## Alternative options for convbin conversion programm
 ALTOBS="-od -os -oi -ot"
 
-#  Receiver options for convbin conversion from ubx to rnx
-#+ Convbin use version demo5 for receiver options
+##  Receiver options for convbin conversion from ubx to rnx
+##+ Convbin use version demo5 for receiver options
 RECOPT="-TADJ=1.0"
 
-# //////////////////////////////////////////////////////////////////////////////
-#GET CML ARGUMENTS
+## //////////////////////////////////////////////////////////////////////////////
+## GET CML ARGUMENTS
 if [ "$#" == 0 ]
 then
 echo "[ERROR]: No input file"
@@ -228,14 +228,15 @@ case "$1" in
             exit 1
             shift
             ;;
-#        *)
-#            echo "[ERROR] Bad argument structure. argument \"${1}\" is not right"
-#            echo "[STATUS] Script Finished Unsuccesfully! Exit Status 1"
-#            exit 1
+        *)
+            echo "[ERROR] Bad argument structure. argument \"${1}\" is not right"
+            echo "[STATUS] Script Finished Unsuccesfully! Exit Status 1"
+            help
+            exit 1
     esac
 done
 
-#Check Anubis if qcheck selected
+## Check Anubis if qcheck selected
 if [ ${QCHECK} -eq 1 ]
 then
     if ! [ -x "$(command -v anubis)" ]
@@ -243,24 +244,24 @@ then
         echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: Anubis is not installed" >> ${GLOG} 2>&1
         exit 1
     fi
-    # TODO CHECK if exist plot_Anubis gs curl
+    ## TODO CHECK if exist plot_Anubis gs curl
 fi
-# set current date for ubx data
+## set current date for ubx data
 # dateubx=$(date +%Y%m%d)
 
 
 tr=(a b c d e f g h i j k l m n o p q r s t u v w x)
 
-# change to ubx directory
+## change to ubx directory
 cd ${UBX_DIR}
 
 
-# //////////////////////////////////////////////////////////////////////////////
+## //////////////////////////////////////////////////////////////////////////////
 ## RATE 30-s create one RINEX file for previous day > Hatanaka > Compressed
 if [ ${DAILY} -eq 1 ]
 then
     #LOG=/home/mitsos/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
-    # Set date auto or manual
+    ##  Set date auto or manual
     if [ ${NOAUTO} -eq 0 ]
     then
         LOG=${HOME}/Apps/ubx2rnx/log/ubx2rnx_d_${SITE_NAME}_$(date +%Y_%m_%d).log
@@ -278,7 +279,7 @@ then
 
     if [ ${RNX_VER} == "2.11" ]
     then
-        #check if all hourly files exists
+        ## check if all hourly files exists
         echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: merge hourly data to daily RINEX v2.11 ......." >> ${LOG} 2>&1
         for i in {0..23}
         do
@@ -294,37 +295,37 @@ then
         do
             CRZ2RNX -f ${i} >>${LOG} 2>&1
         done
-        # produce names for RINEX 2 format
-        # xxxxdddh.yyo.Z
+        ## produce names for RINEX 2 format
+        ## xxxxdddh.yyo.Z
         rnxfile=${SITE_NAME}${doy}0.${yy}o
         crzfile=${SITE_NAME}${doy}0.${yy}d.Z
 
-        # gfzrnx options
-        # -epo_beg start from 00:00:00 not the day before
-        # -d create rinex for hole day,
-        # -smp resample observations to 30-s rate
-        # -crux header inforamtion file
+        ## gfzrnx options
+        ## -epo_beg start from 00:00:00 not the day before
+        ## -d create rinex for hole day,
+        ## -smp resample observations to 30-s rate
+        ## -crux header inforamtion file
         gfzrnx -finp ${SITE_NAME}${doy}?.${yy}o -fout ${rnxfile} \
             -kv -epo_beg ${year}${doy}_000000 -d 86340 -smp 30 \
             -crux ${HEADER_INFO} -f >>${LOG} 2>&1
 
-        # Make quality check
+        ## Make quality check
         #QCKECK=0
-        #TODO for rinex v2
+        ## TODO for rinex v2
         if [ ${QCHECK} -eq 2 ]
         then
             brdc_fname=BRDC00IGS_R_${year}${doy}0000_01D_MN.rnx
-            #download Broadcast ephemeris
+            ## Download Broadcast ephemeris
             wget --user=${BRDC_USER} \
                  --password=${BRDC_PASSWD} \
                  --auth-no-challenge \
                  --no-clobber \
                   ${BRDC_HOST}${year}/brdc/${brdc_fname}.gz
                 
-            #uncompress brdc file
+            ## uncompress brdc file
             gzip -d ${brdc_fname}.gz
                 
-            #make anubis
+            ## make anubis
             anubis \
                 :gen:beg "${rnx_date} 00:00:00" \
                 :gen:end "${rnx_date} 23:59:59" \
@@ -335,18 +336,18 @@ then
                 -x ${XMLFPATH}
         fi
 
-        # convert to Hatanaka (d) and compressed (.Z) format
+        ## convert to Hatanaka (d) and compressed (.Z) format
         RNX2CRZ -f ${rnxfile} >>${LOG} 2>&1
 
-        # remove temporary files
+        ## remove temporary files
         rm -rf  ${SITE_NAME}${doy}*.${yy}o
 
-    # TODO check only first char of rinex version
+    ## TODO check only first char of rinex version
     elif [ ${RNX_VER} == "3.04" ]
     then
-        #produce names for RINEX 3 format
+        ## produce names for RINEX 3 format
         echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: merge hourly data to daily RINEX v3.04 ......." >> ${LOG} 2>&1
-        #check if all hourly files exists
+        ## check if all hourly files exists
         enc_hfile=0
         for i in {0..23}
         do
@@ -374,8 +375,8 @@ then
             gzip -d -f ${i}
             CRX2RNX -f ${i:0:38}>> ${LOG} 2>&1
         done
-        # XXXXMRCCC_K_YYYYDDDHHMM_01D_30S_tt.FFF.gz
-        # check configuration file for details
+        ## XXXXMRCCC_K_YYYYDDDHHMM_01D_30S_tt.FFF.gz
+        ## check configuration file for details
         fname=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}0000_01D_${DRATE}_${tt}
         rnxfile=${fname}.rnx
         crxfile=${fname}.crx
@@ -387,11 +388,11 @@ then
             -kv -epo_beg ${year}${doy}_000000 -d 86340 -smp 30 \
             -crux ${HEADER_INFO} -f >> ${LOG} 2>&1
 
-        # Make quality check
+        ## Make quality check
         if [ ${QCHECK} -eq 1 ]
         then
             brdc_fname=BRD400DLR_S_${year}${doy}0000_01D_MN.rnx
-            #download Broadcast ephemeris
+            ## Download Broadcast ephemeris
             if test -f ${brdc_fname}.gz
             then
                  echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: file ${brdc_fname}.gz exists "   
@@ -404,7 +405,8 @@ then
                       ${BRDC_HOST}${year}/brdc/${brdc_fname}.gz \
                      -O ${brdc_fname}.gz
             fi
-            #uncompress brdc file
+
+            ## uncompress brdc file
             gzip -f -d ${brdc_fname}.gz
 
             #make anubis
@@ -434,13 +436,13 @@ then
 
         fi
 
-        # Convert to Hatanaka format
+        ## Convert to Hatanaka format
         RNX2CRX -f ${rnxfile} >> ${LOG} 2>&1
 
-        # Compress with gzip
+        ## Compress with gzip
         gzip -f -c ${crxfile} > ${crzfile}
 
-        # remove temporary files
+        ## remove temporary files
 #        rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
 #        rm -rf ${rnxfile} ${crxfile} *.rnx *.crx
     else
@@ -448,10 +450,10 @@ then
         exit 1
     fi
     
-    # Check NOARCHIVE
+    ## Check NOARCHIVE
     if [ ${NOARCHIVE} -eq 0 ]
     then
-        # 30-s YYYY/DDD/YYt/
+        ## Folder structure, daily data: 30-s YYYY/DDD/YYt/
         if test -d ${RNX_DAILY}/${year}
         then
             if test -d ${RNX_DAILY}/${year}/${doy}
@@ -481,6 +483,7 @@ then
             mkdir ${RNX_DAILY}/${year}/${doy}
             mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
         fi
+
         ## Copy all file to archive
 	    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Copy file ${crzfile} --> ${RNX_DAILY}/${year}/${doy}/${yy}d/" >> ${LOG} 2>&1
         cp ${crzfile} ${RNX_DAILY}/${year}/${doy}/${yy}d/.
@@ -569,6 +572,7 @@ then
             convbin ${ubx_file} -v ${RNX_VER} -o ${obshfile} ${ALTOBS} -ro ${RECOPT}  >> ${LOG} 2>&1
         else
             echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: file ${UBX_DIR}/${ubx_file} does not exist" >> ${LOG} 2>&1
+            echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: Exit status : 1 >> ${LOG}" 2>&1
             exit 1
         fi
     done
@@ -585,43 +589,43 @@ then
 
 #        obshfile=${fout_name}.obs
 
-        # convert grom ubx > rinex fromat
-        # rinex version ${RNX_VER} from config file
+        ## convert grom ubx > rinex fromat
+        ## rinex version ${RNX_VER} from config file
 #        convbin ${ubx_file} -v ${RNX_VER} -o ${obshfile} ${ALTOBS} -ro ${RECOPT}  >> ${LOG} 2>&1
 
-        # use gfzrnx to check obs file from config contain errors
+        ## use gfzrnx to check obs file from config contain errors
         #gfzrnx -finp ${obshfile} -fout ${rnxhfile} -f -kv
         #wait
 
         if [ ${RNX_VER} == "2.11" ]
         then
-            # produce names for RINEX 2 format
-            # xxxxdddh.yyo.Z
+            ## produce names for RINEX 2 format
+            ## xxxxdddh.yyo.Z
             rnxhfile=${SITE_NAME}${doy}${ax_hour}.${yy}o
             crzhfile=${SITE_NAME}${doy}${ax_hour}.${yy}d.Z
 
-            # gfzrnx options
-            # -epo_beg start from 00:00:00 not the day before
-            # -d create rinex for hole day
-            # -smp resample observations to 30-s rate
-            # -crux header inforamtion file
+            ## gfzrnx options
+            ## -epo_beg start from 00:00:00 not the day before
+            ## -d create rinex for hole day
+            ## -smp resample observations to 30-s rate
+            ## -crux header inforamtion file
             gfzrnx -finp ${SITE_NAME}${doy}${ax_hour}??.${yy}o -fout ${rnxhfile} \
                 -kv \
                 -crux ${HEADER_INFO} -f  >> ${LOG} 2>&1
 
             wait
 
-            # convert to Hatanaka (d) and compressed (.Z) format
+            ## convert to Hatanaka (d) and compressed (.Z) format
             RNX2CRZ -f ${rnxhfile}  >>${LOG} 2>&1
 
-            # remove temporary files
+            ## remove temporary files
 #            rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
 
         elif [ ${RNX_VER} == "3.04" ]
         then
-            #produce names for RINEX 3 format
-            # XXXXMRCCC_K_YYYYDDDHHMM_01D_30S_tt.FFF.gz
-            # check configuration file for details
+            ## produce names for RINEX 3 format
+            ## XXXXMRCCC_K_YYYYDDDHHMM_01D_30S_tt.FFF.gz
+            ## check configuration file for details
             fname=${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}${rnx_hour}00_01H_${HRATE}_${tt}
             rnxhfile=${fname}.rnx
             crxhfile=${fname}.crx
@@ -633,7 +637,7 @@ then
 
             wait
 
-            # Make quality check TODO
+            ## Make quality check TODO
             ## QCHECK not working yet for hourly files
             if [ ${QCHECK} -eq 2 ]
             then
@@ -660,13 +664,13 @@ then
 
             fi
 
-            # Convert to Hatanaka format
+            ## Convert to Hatanaka format
             RNX2CRX -f ${rnxhfile} >>${LOG} 2>&1
 
-            # Compress with gzip
+            ## Compress with gzip
             gzip -f -c ${crxhfile} > ${crzhfile}
 
-            # remove temporary files
+            ## remove temporary files
  #           rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
  #           rm -rf ${rnxhfile} ${crxhfile}
         else
@@ -674,10 +678,10 @@ then
             exit 1
         fi
        
-        # Move RINEX to archive folder
+        ## Move RINEX to archive folder
         if [ ${NOARCHIVE} -eq 0 ]
         then
-            #YYYY/DDD/YYt/HH/mmmmDDDHMM.YYt.Z
+            ## Folder stracture YYYY/DDD/YYt/HH/mmmmDDDHMM.YYt.Z
             if test -d ${RNX_HIGH}/${year}
             then
                 if test -d ${RNX_HIGH}/${year}/${doy}
