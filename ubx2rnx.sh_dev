@@ -347,16 +347,27 @@ then
         #produce names for RINEX 3 format
         echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: merge hourly data to daily RINEX v3.04 ......." >> ${LOG} 2>&1
         #check if all hourly files exists
+        enc_hfile=0
         for i in {0..23}
         do
             if test -f ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz
-          then
-              echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz exist" >> ${LOG} 2>&1
-          else
-              echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz does not exist" >> ${LOG} 2>&1
+            then
+                echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz exist" >> ${LOG} 2>&1
+                let enc_hfile++
+            else
+                echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: file ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}$(printf '%02d' $((i)))00_01H_${HRATE}_${tt}.crx.gz does not exist" >> ${LOG} 2>&1
           #    exit 1
-          fi
+            fi
         done
+
+        ## If no hourly file exist then stop the script
+        ## Dont make daily file
+        if [ ${enc_hfile} -eq 0 ]
+        then
+            echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: No any hourly file found. Daily file not created" >> ${LOG} 2>&1
+            echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: Exit Status: 1" >>${LOG} 2>&1
+            exit 1
+        fi
 
         for i in `ls ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}*00_01H_${HRATE}_${tt}.crx.gz`
         do
