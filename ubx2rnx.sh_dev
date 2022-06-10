@@ -464,16 +464,6 @@ then
                 else
                     mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
                 fi
-                if [ $QCHECK -eq 1 ]
-                then
-                    if test -d ${RNX_DAILY}/${year}/${doy}/${yy}qc
-                    then
-		        	    echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory  ${RNX_DAILY}/${year}/${doy}/${yy}qc exists" >> ${LOG} 2>&1
-                    else
-		            	echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Create directory  ${RNX_DAILY}/${year}/${doy}/${yy}qc" >> ${LOG} 2>&1
-                        mkdir ${RNX_DAILY}/${year}/${doy}/${yy}qc
-                    fi
-                fi
             else
                 mkdir ${RNX_DAILY}/${year}/${doy}
                 mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
@@ -482,6 +472,17 @@ then
             mkdir ${RNX_DAILY}/${year}
             mkdir ${RNX_DAILY}/${year}/${doy}
             mkdir ${RNX_DAILY}/${year}/${doy}/${yy}d
+        fi
+        ## Add qc folder
+        if [ $QCHECK -eq 1 ]
+        then
+            if test -d ${RNX_DAILY}/${year}/${doy}/${yy}qc
+            then
+		        echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Directory  ${RNX_DAILY}/${year}/${doy}/${yy}qc exists" >> ${LOG} 2>&1
+            else
+                echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: Create directory  ${RNX_DAILY}/${year}/${doy}/${yy}qc" >> ${LOG} 2>&1
+                mkdir ${RNX_DAILY}/${year}/${doy}/${yy}qc
+            fi
         fi
 
         ## Copy all file to archive
