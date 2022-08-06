@@ -535,7 +535,16 @@ then
         hod_fname=${SPDATE}_${SPHOUR}-
     fi
     echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG] : data to hourly RINEX ......." >> ${LOG} 2>&1
-#    count_ubx=0
+#    count_ubx=0 
+
+    ## Uncompress all ubx files if exist
+    for ubx_7z in `ls ${hod_fname}*_${SITE_NAME}.ubx.7z`
+    do
+        7z x ${hod_fname}*_${SITE_NAME}.ubx.7z -y
+        echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: decompress ${ubx_7z}">>${LOG} 2>&1
+    done
+
+    ## Start pre processing
     for ubx_file in `ls ${hod_fname}*_${SITE_NAME}.ubx`
     do
         echo ${ubx_file}
@@ -703,14 +712,17 @@ then
                     mkdir ${RNX_HIGH}/${year}/${doy}
                     mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d
                     mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
+                    mkdir ${RNX_HIGH}/${year}/${doy}/${yy}ubx
                 fi
             else
                 mkdir ${RNX_HIGH}/${year}
                 mkdir ${RNX_HIGH}/${year}/${doy}
                 mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d
                 mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
+                mkdir ${RNX_HIGH}/${year}/${doy}/${yy}ubx
             fi
             cp ${crzhfile} ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}/.
+            cp ${hod_fname}*_${SITE_NAME}.ubx.7z ${RNX_HIGH}/${year}/${doy}/${yy}ubx/.
         fi
 else
     echo "choose RATE 30-s or 1Hz" >> ${LOG} 2>&1
