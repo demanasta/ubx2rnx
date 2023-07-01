@@ -443,8 +443,9 @@ then
         gzip -f -c ${crxfile} > ${crzfile}
 
         ## remove temporary files
-#        rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
-#        rm -rf ${rnxfile} ${crxfile} *.rnx *.crx
+        # rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
+        rm -rf ${rnxfile} ${crxfile}
+        rm ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}*00_01H_${HRATE}_${tt}.*
     else
         echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: use rinex 2.11 or 3.04 > config file" >> ${LOG} 2>&1
         exit 1
@@ -540,7 +541,7 @@ then
     ## Uncompress all ubx files if exist
     for ubx_7z in `ls ${hod_fname}*_${SITE_NAME}.ubx.7z`
     do
-        7z x ${hod_fname}*_${SITE_NAME}.ubx.7z -y
+        7z x ${ubx_7z} -y
         echo "$(date +%Y.%m.%d_%H:%M:%S) [DEBUG]: decompress ${ubx_7z}">>${LOG} 2>&1
     done
 
@@ -681,8 +682,8 @@ then
             gzip -f -c ${crxhfile} > ${crzhfile}
 
             ## remove temporary files
- #           rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
- #           rm -rf ${rnxhfile} ${crxhfile}
+            rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
+            rm -rf ${rnxhfile}
         else
             echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: use rinex 2.11 or 3.04 > config file" ${LOG} 2>&1
             exit 1
@@ -721,8 +722,12 @@ then
                 mkdir ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}
                 mkdir ${RNX_HIGH}/${year}/${doy}/${yy}ubx
             fi
+            ## copy crx.gz file. we need a copy for daily file
             cp ${crzhfile} ${RNX_HIGH}/${year}/${doy}/${yy}d/${rnx_hour}/.
-            cp ${hod_fname}*_${SITE_NAME}.ubx.7z ${RNX_HIGH}/${year}/${doy}/${yy}ubx/.
+            ## move ubx.7z to archive
+            mv ${hod_fname}*_${SITE_NAME}.ubx.7z ${RNX_HIGH}/${year}/${doy}/${yy}ubx/.
+            ## remove ubx tmp file
+            rm ${hod_fname}*_${SITE_NAME}.ubx
         fi
 else
     echo "choose RATE 30-s or 1Hz" >> ${LOG} 2>&1
