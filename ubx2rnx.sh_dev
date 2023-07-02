@@ -514,6 +514,8 @@ then
         fi
     fi
 
+    ## Clear directory from all files from previous day
+    rm -rf ${fname}*
 
 
 # //////////////////////////////////////////////////////////////////////////////
@@ -682,8 +684,9 @@ then
             gzip -f -c ${crxhfile} > ${crzhfile}
 
             ## remove temporary files
-            rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
-            rm -rf ${rnxhfile}
+#            rm -rf  ${SITE_NAME}${doy}*.${yy}o ${SITE_NAME}${doy}*.obs
+            rm -rf ${SITE_NAME}${M}${R}${CCC}_${K}_${year}${doy}${rnx_hour}*_01H_${HRATE}_${tt}.obs
+            rm -rf ${rnxhfile} ${crxhfile}
         else
             echo "$(date +%Y.%m.%d_%H:%M:%S) [ERROR]: use rinex 2.11 or 3.04 > config file" ${LOG} 2>&1
             exit 1
